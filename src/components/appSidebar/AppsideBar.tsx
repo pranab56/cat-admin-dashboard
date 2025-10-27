@@ -10,10 +10,11 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import {
-  BarChart3,
+  Bell,
   LayoutGrid,
   Settings,
-  Users,
+  User,
+  Users
 } from "lucide-react";
 import Image from 'next/image';
 import Link from "next/link";
@@ -30,9 +31,8 @@ const sidebars: SidebarItem[] = [
   { name: "Overview", path: "/", icon: LayoutGrid },
   { name: "User Management", path: "/user-management", icon: Users },
   { name: "App Setting", path: "/app-setting", icon: Settings },
-  { name: "Analytics", path: "/analytics", icon: BarChart3 },
-  { name: "Notification", path: "/notifications", icon: BarChart3 },
-  { name: "Profile", path: "/settings", icon: BarChart3 },
+  { name: "Notification", path: "/notifications", icon: Bell },
+  { name: "Profile", path: "/settings", icon: User },
 ];
 
 export default function CathaSidebar() {
