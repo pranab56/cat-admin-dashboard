@@ -1,151 +1,125 @@
 "use client";
 
 import { Button } from '@/components/ui/button';
+import { CheckCircle, Loader2, Trash2 } from 'lucide-react';
+import { toast } from 'sonner'; // or your preferred toast library
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { Calendar, CheckCircle, Clock, Plus, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+  useDeleteNotificationMutation,
+  useGetAllNotificationQuery,
+  useReadAllNotificationMutation
+} from "../../../features/notifications/notificationsApi";
 
+// Interface based on your API response
 interface Notification {
-  id: number;
-  title: string;
-  date: string;
-  time: string;
-  read: boolean;
+  _id: string;
+  message: string;
+  role: string;
+  type: string;
+  status: string;
+  isRead: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
-interface FormData {
-  title: string;
+interface ApiResponse {
+  success: boolean;
   message: string;
-  audience: string;
-  date: string;
-  time: string;
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPage: number;
+  };
+  data: Notification[];
 }
 
 const NotificationSystem = () => {
-  const [notifications, setNotifications] = useState<Notification[]>([
-    {
-      id: 1,
-      title: 'RSVP Reminder',
-      date: '12/09/2025',
-      time: '10:38 pm',
-      read: true,
-    },
-    {
-      id: 2,
-      title: 'RSVP Reminder',
-      date: '12/09/2025',
-      time: '10:38 pm',
-      read: true,
-    },
-    {
-      id: 3,
-      title: 'RSVP Reminder',
-      date: '12/09/2025',
-      time: '10:38 pm',
-      read: true,
-    },
-    {
-      id: 4,
-      title: 'RSVP Reminder',
-      date: '12/09/2025',
-      time: '10:38 pm',
-      read: true,
-    },
-    {
-      id: 5,
-      title: 'RSVP Reminder',
-      date: '12/09/2025',
-      time: '10:38 pm',
-      read: true,
-    },
-    {
-      id: 6,
-      title: 'RSVP Reminder',
-      date: '12/09/2025',
-      time: '10:38 pm',
-      read: true,
-    },
-    {
-      id: 7,
-      title: 'RSVP Reminder',
-      date: '12/09/2025',
-      time: '10:38 pm',
-      read: true,
-    },
-    {
-      id: 8,
-      title: 'RSVP Reminder',
-      date: '12/09/2025',
-      time: '10:38 pm',
-      read: true,
-    },
-  ]);
+  // API hooks
+  const { data: apiResponse, isLoading, error, refetch } = useGetAllNotificationQuery({});
+  const [readAllNotification, { isLoading: isReadingAll }] = useReadAllNotificationMutation();
+  const [deleteNotification, { isLoading: isDeleting }] = useDeleteNotificationMutation();
 
-  const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false);
-  const [formData, setFormData] = useState<FormData>({
-    title: '',
-    message: '',
-    audience: 'All Users',
-    date: '',
-    time: '',
-  });
-
-  const handleDelete = (id: number): void => {
-    setNotifications(notifications.filter((notif) => notif.id !== id));
-  };
-
-  const handleInputChange = (field: keyof FormData, value: string): void => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-  };
-
-  const handleSendNotification = (): void => {
-    if (formData.title && formData.message && formData.date && formData.time) {
-      const newNotification: Notification = {
-        id: notifications.length + 1,
-        title: formData.title,
-        date: formData.date,
-        time: formData.time,
-        read: true,
-      };
-      setNotifications([newNotification, ...notifications]);
-      setFormData({
-        title: '',
-        message: '',
-        audience: 'All Users',
-        date: '',
-        time: '',
-      });
-      setIsDialogOpen(false);
+  // Handle read all notifications
+  const handleReadAll = async (): Promise<void> => {
+    try {
+      await readAllNotification({}).unwrap();
+      toast.success("All notifications marked as read");
+      refetch(); // Refresh the notifications list
+    } catch (error) {
+      console.error('Failed to read all notifications:', error);
+      toast.error("Failed to mark all as read");
     }
   };
 
-  const handleCancel = (): void => {
-    setFormData({
-      title: '',
-      message: '',
-      audience: 'All Users',
-      date: '',
-      time: '',
-    });
-    setIsDialogOpen(false);
+  // Handle delete notification
+  const handleDelete = async (id: string): Promise<void> => {
+    try {
+      await deleteNotification(id).unwrap();
+      toast.success("Notification deleted successfully");
+      refetch(); // Refresh the notifications list
+    } catch (error) {
+      console.error('Failed to delete notification:', error);
+      toast.error("Failed to delete notification");
+    }
   };
+
+  // Format date to display
+  const formatDate = (dateString: string): { date: string; time: string } => {
+    const date = new Date(dateString);
+    const dateFormatted = date.toLocaleDateString('en-US');
+    const timeFormatted = date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+    return { date: dateFormatted, time: timeFormatted };
+  };
+
+  // Get notification icon based on type
+  const getNotificationIcon = (type: string) => {
+    switch (type) {
+      case 'success':
+        return <CheckCircle className="w-5 h-5 text-green-600" />;
+      case 'error':
+        return <CheckCircle className="w-5 h-5 text-red-600" />;
+      case 'warning':
+        return <CheckCircle className="w-5 h-5 text-yellow-600" />;
+      default:
+        return <CheckCircle className="w-5 h-5 text-blue-600" />;
+    }
+  };
+
+  // Get notification background color based on read status
+  const getNotificationBgColor = (isRead: boolean) => {
+    return isRead ? 'bg-gray-50' : 'bg-blue-50 border border-blue-200';
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-64">
+        <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+        <span className="ml-2 text-gray-600">Loading notifications...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex justify-center items-center min-h-64">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">Failed to load notifications</p>
+          <Button
+            onClick={() => refetch()}
+            className="bg-indigo-500 hover:bg-indigo-600 text-white"
+          >
+            Try Again
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const notifications = apiResponse?.data || [];
 
   return (
     <div className="">
@@ -153,160 +127,87 @@ const NotificationSystem = () => {
         <div className="bg-white rounded-2xl shadow-lg p-8">
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">Notifications</h1>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Notifications</h1>
+              {apiResponse?.meta && (
+                <p className="text-gray-500 mt-1">
+                  {apiResponse.meta.total} notification{apiResponse.meta.total !== 1 ? 's' : ''}
+                </p>
+              )}
+            </div>
             <Button
-              onClick={() => setIsDialogOpen(true)}
-              className="bg-indigo-500 hover:bg-indigo-600 text-white px-6 py-2.5 rounded-lg font-medium flex items-center gap-2"
+              onClick={handleReadAll}
+              disabled={isReadingAll || notifications.length === 0}
+              className="bg-indigo-500 hover:bg-indigo-600 text-white px-6 py-2.5 rounded-lg font-medium flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Create New Notification
-              <Plus className="w-5 h-5" />
+              {isReadingAll ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : null}
+              Read All Notifications
             </Button>
           </div>
 
           {/* Notifications List */}
           <div className="space-y-3">
-            {notifications.map((notification) => (
-              <div
-                key={notification.id}
-                className="flex items-center justify-between p-4 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-                    <CheckCircle className="w-5 h-5 text-green-600" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900">
-                      {notification.title}
-                    </h3>
-                    <p className="text-sm text-gray-500">
-                      {notification.date} / {notification.time}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => handleDelete(notification.id)}
-                  className="w-10 h-10 rounded-full bg-red-50 hover:bg-red-100 flex items-center justify-center transition-colors"
-                >
-                  <Trash2 className="w-5 h-5 text-red-500" />
-                </button>
+            {notifications.length === 0 ? (
+              <div className="text-center py-12">
+                <CheckCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                <p className="text-gray-500 text-lg">No notifications found</p>
+                <p className="text-gray-400 mt-1">You're all caught up!</p>
               </div>
-            ))}
+            ) : (
+              notifications.map((notification) => {
+                const { date, time } = formatDate(notification.createdAt);
+
+                return (
+                  <div
+                    key={notification._id}
+                    className={`flex items-center justify-between p-4 rounded-xl ${getNotificationBgColor(notification.isRead)} hover:bg-gray-100 transition-colors`}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${notification.isRead ? 'bg-gray-200' : 'bg-blue-100'
+                        }`}>
+                        {getNotificationIcon(notification.type)}
+                      </div>
+                      <div className="flex-1">
+                        <h3 className={`font-semibold ${notification.isRead ? 'text-gray-700' : 'text-gray-900'
+                          }`}>
+                          {notification.message}
+                        </h3>
+                        <div className="flex items-center gap-4 mt-1">
+                          <p className="text-sm text-gray-500">
+                            {date} / {time}
+                          </p>
+                          <span className={`text-xs px-2 py-1 rounded-full ${notification.isRead
+                              ? 'bg-gray-200 text-gray-600'
+                              : 'bg-blue-200 text-blue-700'
+                            }`}>
+                            {notification.isRead ? 'Read' : 'Unread'}
+                          </span>
+                          <span className="text-xs px-2 py-1 rounded-full bg-purple-100 text-purple-700">
+                            {notification.type}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleDelete(notification._id)}
+                      disabled={isDeleting}
+                      className="w-10 h-10 rounded-full bg-red-50 hover:bg-red-100 flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isDeleting ? (
+                        <Loader2 className="w-4 h-4 animate-spin text-red-500" />
+                      ) : (
+                        <Trash2 className="w-5 h-5 text-red-500" />
+                      )}
+                    </button>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
       </div>
-
-      {/* Create Notification Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[600px] bg-white rounded-2xl p-0">
-          <div className="p-6">
-            <DialogHeader className="flex flex-row items-center justify-between mb-6">
-              <DialogTitle className="text-2xl font-bold text-gray-900">
-                Notifications
-              </DialogTitle>
-            </DialogHeader>
-
-            <div className="space-y-5">
-              {/* Notification Title */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-2">
-                  Notification Title
-                </label>
-                <Input
-                  placeholder="Enter Notification Title here..."
-                  value={formData.title}
-                  onChange={(e) => handleInputChange('title', e.target.value)}
-                  className="w-full bg-indigo-50 border-0 rounded-lg px-4 py-3 placeholder:text-gray-400"
-                />
-              </div>
-
-              {/* Notification Message */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-2">
-                  Notification Message
-                </label>
-                <Textarea
-                  placeholder="Type your message here..."
-                  value={formData.message}
-                  onChange={(e) => handleInputChange('message', e.target.value)}
-                  className="w-full bg-indigo-50 border-0 rounded-lg px-4 py-3 min-h-[120px] placeholder:text-gray-400 resize-none"
-                />
-              </div>
-
-              {/* Target Audience */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-2">
-                  Target Audience
-                </label>
-                <Select
-                  value={formData.audience}
-                  onValueChange={(value) => handleInputChange('audience', value)}
-                >
-                  <SelectTrigger className="w-full bg-indigo-50 border-0 rounded-lg px-4 py-3">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="All Users">All Users</SelectItem>
-                    <SelectItem value="Premium Users">Premium Users</SelectItem>
-                    <SelectItem value="Free Users">Free Users</SelectItem>
-                    <SelectItem value="New Users">New Users</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Date and Time */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-2">
-                    Date
-                  </label>
-                  <div className="relative">
-                    <Input
-                      type="text"
-                      placeholder="mm/dd/yyyy"
-                      value={formData.date}
-                      onChange={(e) => handleInputChange('date', e.target.value)}
-                      className="w-full bg-indigo-50 border-0 rounded-lg px-4 py-3 pr-10 placeholder:text-gray-400"
-                    />
-                    <Calendar className="w-5 h-5 text-indigo-500 absolute right-3 top-1/2 -translate-y-1/2" />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-2">
-                    Time
-                  </label>
-                  <div className="relative">
-                    <Input
-                      type="text"
-                      placeholder="--:--"
-                      value={formData.time}
-                      onChange={(e) => handleInputChange('time', e.target.value)}
-                      className="w-full bg-indigo-50 border-0 rounded-lg px-4 py-3 pr-10 placeholder:text-gray-400"
-                    />
-                    <Clock className="w-5 h-5 text-indigo-500 absolute right-3 top-1/2 -translate-y-1/2" />
-                  </div>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="flex items-center gap-3 pt-4">
-                <Button
-                  onClick={handleCancel}
-                  variant="outline"
-                  className="flex-1 bg-red-50 text-red-600 hover:bg-red-100 border-0 py-3 rounded-lg font-semibold"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleSendNotification}
-                  className="flex-1 bg-indigo-500 hover:bg-indigo-600 text-white py-3 rounded-lg font-semibold"
-                >
-                  Send Notification
-                </Button>
-              </div>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

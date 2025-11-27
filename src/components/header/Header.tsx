@@ -2,16 +2,21 @@
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Bell, Search } from "lucide-react";
+import { Bell } from "lucide-react";
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
+import { useGetAllNotificationQuery } from '../../features/notifications/notificationsApi';
+import { useGetProfileQuery } from '../../features/settings/settingsApi';
+import { baseURL } from '../../utils/BaseURL';
 
 export default function Header() {
   const pathname = usePathname();
   const cleanPath = pathname.replace("/", "");
 
+  const { data: notifications } = useGetAllNotificationQuery({});
+  const { data: profile } = useGetProfileQuery({});
 
-  const unreadCount = 1; // Example unread count
+
   const userName = "Jacob Jones";
   const userRole = "Admin";
   const userImage = "https://api.dicebear.com/7.x/avataaars/svg?seed=Jacob";
@@ -64,14 +69,14 @@ export default function Header() {
 
         {/* Middle - Search Bar */}
         <div className="flex-1 max-w-md mx-8">
-          <div className="relative">
+          {/* <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
             <input
               type="text"
               placeholder="Search here..."
               className="w-full h-10 pl-10 pr-4 rounded-lg border border-gray-200 bg-white text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
-          </div>
+          </div> */}
         </div>
 
         {/* Right side - Notification and Profile */}
@@ -83,12 +88,12 @@ export default function Header() {
               className="relative flex cursor-pointer items-center justify-center transition-colors"
             >
               <Bell className="h-6 w-6 text-gray-700" />
-              {unreadCount > 0 && (
+              {notifications?.data?.length > 0 && (
                 <Badge
                   className="absolute -top-1 -right-1 h-4 w-4 min-w-4 rounded-full p-0 flex items-center justify-center text-[10px] font-semibold"
                   variant="destructive"
                 >
-                  {unreadCount > 99 ? "99+" : unreadCount}
+                  {notifications?.data?.length}
                 </Badge>
               )}
             </button>
@@ -101,7 +106,7 @@ export default function Header() {
               className="flex items-center gap-3 transition-colors cursor-pointer"
             >
               <Avatar className="h-9 w-9">
-                <AvatarImage src={userImage} alt={userName} />
+                <AvatarImage src={baseURL + "/" + profile?.data?.profile} alt={userName} />
                 <AvatarFallback className="bg-blue-100 text-blue-600 font-semibold text-sm">
                   {userName
                     .split(" ")
@@ -112,9 +117,9 @@ export default function Header() {
               </Avatar>
               <div className="flex flex-col items-start">
                 <span className="text-sm font-semibold text-gray-900">
-                  {userName}
+                  {profile?.data?.fullName}
                 </span>
-                <span className="text-xs text-gray-500">{userRole}</span>
+                <span className="text-xs text-gray-500">{profile?.data?.role}</span>
               </div>
             </button>
 

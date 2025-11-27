@@ -3,13 +3,18 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Cell, Pie, PieChart, ResponsiveContainer } from "recharts";
 
-const data = [
-  { name: "Free", value: 4800, color: "#22c55e" },
-  { name: "Premium", value: 7700, color: "#3b82f6" },
-];
+interface UserDonutChartProps {
+  freeUsers: number;
+  premiumUsers: number;
+  totalUsers: number;
+}
 
-export default function UserDonutChart() {
-  const total = data.reduce((sum, item) => sum + item.value, 0);
+export default function UserDonutChart({ freeUsers, premiumUsers, totalUsers }: UserDonutChartProps) {
+  // Prepare data for the chart from API response
+  const data = [
+    { name: "Free", value: freeUsers, color: "#22c55e" },
+    { name: "Premium", value: premiumUsers, color: "#3b82f6" },
+  ];
 
   return (
     <Card className="border-0 shadow-sm">
@@ -40,11 +45,11 @@ export default function UserDonutChart() {
                 </Pie>
               </PieChart>
             </ResponsiveContainer>
-            
+
             {/* Center Text */}
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <div className="text-3xl font-bold text-gray-900">
-                {(total / 1000).toFixed(0)}K
+                {totalUsers}
               </div>
               <div className="text-sm text-gray-600">Total Users</div>
             </div>
@@ -58,7 +63,9 @@ export default function UserDonutChart() {
                   className="w-3 h-3 rounded-full"
                   style={{ backgroundColor: item.color }}
                 />
-                <span className="text-sm text-gray-700">{item.name}</span>
+                <span className="text-sm text-gray-700">
+                  {item.name}: {item.value}
+                </span>
               </div>
             ))}
           </div>

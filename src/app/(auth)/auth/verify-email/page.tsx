@@ -3,13 +3,16 @@
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { ClipboardEvent, FormEvent, KeyboardEvent, useRef, useState } from 'react';
+import { useForgotEmailOTPCheckMutation } from '../../../../features/auth/authApi';
 
 export default function VerifyOTPPage() {
-  const [otp, setOtp] = useState<string[]>(['', '', '', '']);
+  const [otp, setOtp] = useState<string[]>(['', '', '', '', '', '']);
   const [error, setError] = useState<string>('');
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const router = useRouter();
+
+  const [matchOTP, { isLoading }] = useForgotEmailOTPCheckMutation();
 
   // Fixed ref callback - no return value
   const setInputRef = (index: number) => (el: HTMLInputElement | null) => {
@@ -55,7 +58,7 @@ export default function VerifyOTPPage() {
   };
 
   // Handle submit
-  const handleSubmit = (e: FormEvent<HTMLFormElement>): void => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>): void => {
     e.preventDefault();
     setError('');
 
@@ -67,15 +70,15 @@ export default function VerifyOTPPage() {
       return;
     }
 
-    // Proceed with verification
-    setIsLoading(true);
+    try {
+      const reponse = await matchOTP({ otp: otpValue }).unwrap();
+      console.log(reponse)
+    } catch (error) {
+      console.log(error)
+    }
 
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
-      alert(`Verification code ${otpValue} has been verified successfully!`);
-      router.push('/auth/reset-password');
-    }, 1500);
+
+
   };
 
   // Handle resend

@@ -10,26 +10,37 @@ import {
 import { Input } from '@/components/ui/input';
 import { Eye, EyeOff, X } from 'lucide-react';
 import Image from 'next/image';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useChangePasswordMutation, useEditProfileMutation, useGetProfileQuery } from "../../../features/settings/settingsApi";
+import { baseURL } from '../../../utils/BaseURL';
 
 interface ProfileData {
-  firstName: string;
-  lastName: string;
-  country: string;
-  address: string;
+  _id: string;
+  profile: string;
+  fullName: string;
+  email: string;
   role: string;
-  avatar: string;
+  isActive: boolean;
+  isDeleted: boolean;
+  phone: string;
+  subscriptionId: string | null;
+  isStripeConnectedAccount: boolean;
+  userDeviceId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  __v: number;
 }
 
 interface EditFormData {
-  firstName: string;
-  lastName: string;
-  country: string;
-  address: string;
+  profile: string | File;
+  fullName: string;
+  email: string;
+  role: string;
+  phone: string;
 }
 
 interface PasswordFormData {
-  currentPassword: string;
+  oldPassword: string;
   newPassword: string;
   confirmPassword: string;
 }
@@ -41,27 +52,26 @@ interface ShowPasswords {
 }
 
 const ProfileSettings = () => {
-  const [profileData, setProfileData] = useState<ProfileData>({
-    firstName: 'jane',
-    lastName: 'Cooper',
-    country: 'United Kingdom',
-    address: '3891 Ranchview Dr. Richardson, California 62639',
-    role: 'Admin',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop',
-  });
-
   const [isEditProfileOpen, setIsEditProfileOpen] = useState<boolean>(false);
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState<boolean>(false);
 
+  // API hooks
+  const { data: profileResponse, isLoading, refetch } = useGetProfileQuery({});
+  const [updateProfile, { isLoading: isUpdating }] = useEditProfileMutation();
+  const [changePassword, { isLoading: isChangingPassword }] = useChangePasswordMutation();
+
   const [editFormData, setEditFormData] = useState<EditFormData>({
-    firstName: '',
-    lastName: '',
-    country: '',
-    address: '',
+    profile: '',
+    fullName: '',
+    email: '',
+    role: '',
+    phone: '',
   });
 
+  const [previewImage, setPreviewImage] = useState<string>('');
+
   const [passwordFormData, setPasswordFormData] = useState<PasswordFormData>({
-    currentPassword: '',
+    oldPassword: '',
     newPassword: '',
     confirmPassword: '',
   });
@@ -72,31 +82,84 @@ const ProfileSettings = () => {
     confirm: false,
   });
 
+  const [apiMessage, setApiMessage] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  // Set profile data when API response is available
+  useEffect(() => {
+    if (profileResponse?.data) {
+      setEditFormData({
+        profile: profileResponse.data.profile || '',
+        fullName: profileResponse.data.fullName || '',
+        email: profileResponse.data.email || '',
+        role: profileResponse.data.role || '',
+        phone: profileResponse.data.phone || '',
+      });
+      setPreviewImage(profileResponse.data.profile || '');
+    }
+  }, [profileResponse]);
+
+  const showMessage = (type: 'success' | 'error', message: string) => {
+    setApiMessage({ type, message });
+    setTimeout(() => setApiMessage(null), 5000);
+  };
+
   const handleEditProfile = (): void => {
-    setEditFormData({
-      firstName: profileData.firstName,
-      lastName: profileData.lastName,
-      country: profileData.country,
-      address: profileData.address,
-    });
+    if (profileResponse?.data) {
+      setEditFormData({
+        profile: profileResponse.data.profile || '',
+        fullName: profileResponse.data.fullName || '',
+        email: profileResponse.data.email || '',
+        role: profileResponse.data.role || '',
+        phone: profileResponse.data.phone || '',
+      });
+      setPreviewImage(profileResponse.data.profile || '');
+    }
     setIsEditProfileOpen(true);
   };
 
-  const handleSaveProfile = (): void => {
-    setProfileData({
-      ...profileData,
-      ...editFormData,
-    });
-    setIsEditProfileOpen(false);
+  const handleSaveProfile = async (): Promise<void> => {
+    try {
+      // Create FormData for file upload
+      const formData = new FormData();
+
+      // Add profile image
+      if (editFormData.profile instanceof File) {
+        formData.append('profile', editFormData.profile);
+      }
+
+      // Add other fields
+      formData.append('fullName', editFormData.fullName);
+      formData.append('email', editFormData.email);
+      formData.append('role', editFormData.role);
+      formData.append('phone', editFormData.phone);
+
+      const response = await updateProfile(formData).unwrap();
+
+      if (response.success) {
+        showMessage('success', response.message || 'Profile updated successfully');
+        setIsEditProfileOpen(false);
+        refetch(); // Refresh the profile data
+      } else {
+        showMessage('error', response.message || 'Failed to update profile');
+      }
+    } catch (error: any) {
+      console.error('Update error:', error);
+      showMessage('error', error?.data?.message || 'Failed to update profile');
+    }
   };
 
   const handleCancelEdit = (): void => {
-    setEditFormData({
-      firstName: '',
-      lastName: '',
-      country: '',
-      address: '',
-    });
+    // Reset form data to current profile data
+    if (profileResponse?.data) {
+      setEditFormData({
+        profile: profileResponse.data.profile || '',
+        fullName: profileResponse.data.fullName || '',
+        email: profileResponse.data.email || '',
+        role: profileResponse.data.role || '',
+        phone: profileResponse.data.phone || '',
+      });
+      setPreviewImage(profileResponse.data.profile || '');
+    }
     setIsEditProfileOpen(false);
   };
 
@@ -104,20 +167,43 @@ const ProfileSettings = () => {
     setIsChangePasswordOpen(true);
   };
 
-  const handleSavePassword = (): void => {
-    // Password change logic here
-    console.log('Password changed');
-    setPasswordFormData({
-      currentPassword: '',
-      newPassword: '',
-      confirmPassword: '',
-    });
-    setIsChangePasswordOpen(false);
+  const handleSavePassword = async (): Promise<void> => {
+    // Validate passwords
+    if (passwordFormData.newPassword !== passwordFormData.confirmPassword) {
+      showMessage('error', 'New password and confirm password do not match');
+      return;
+    }
+
+    if (passwordFormData.newPassword.length < 6) {
+      showMessage('error', 'Password must be at least 6 characters long');
+      return;
+    }
+
+    try {
+      const response = await changePassword({
+        oldPassword: passwordFormData.oldPassword,
+        newPassword: passwordFormData.newPassword,
+      }).unwrap();
+
+      if (response.success) {
+        showMessage('success', response.message || 'Password changed successfully');
+        setPasswordFormData({
+          oldPassword: '',
+          newPassword: '',
+          confirmPassword: '',
+        });
+        setIsChangePasswordOpen(false);
+      } else {
+        showMessage('error', response.message || 'Failed to change password');
+      }
+    } catch (error: any) {
+      showMessage('error', error?.data?.message || 'Failed to change password');
+    }
   };
 
   const handleCancelPassword = (): void => {
     setPasswordFormData({
-      currentPassword: '',
+      oldPassword: '',
       newPassword: '',
       confirmPassword: '',
     });
@@ -131,8 +217,47 @@ const ProfileSettings = () => {
     }));
   };
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Store the file object
+      setEditFormData({
+        ...editFormData,
+        profile: file,
+      });
+
+      // Create preview URL
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          setPreviewImage(event.target.result as string);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="text-lg">Loading...</div>
+      </div>
+    );
+  }
+
+  const profileData = profileResponse?.data;
+
   return (
     <div className="">
+      {/* API Message Alert */}
+      {apiMessage && (
+        <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg ${apiMessage.type === 'success' ? 'bg-green-500' : 'bg-red-500'
+          } text-white`}>
+          {apiMessage.message}
+        </div>
+      )}
+
       <div className="bg-white p-8 rounded-2xl shadow-sm">
         {/* Page Title */}
         <h1 className="text-3xl font-bold text-gray-900 mb-6">Settings</h1>
@@ -142,17 +267,18 @@ const ProfileSettings = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Image
-                src={profileData.avatar}
+                src={profileData?.profile ? `${baseURL}/${profileData.profile}` : '/placeholder.png'}
                 alt="Profile"
-                width={1000}
-                height={1000}
+                width={80}
+                height={80}
                 className="w-20 h-20 rounded-full object-cover"
               />
               <div>
                 <h2 className="text-2xl font-bold text-gray-900">
-                  {profileData.firstName.charAt(0).toUpperCase() + profileData.firstName.slice(1)} {profileData.lastName}
+                  {profileData?.fullName || 'User'}
                 </h2>
-                <p className="text-gray-500">{profileData.role}</p>
+                <p className="text-gray-500 capitalize">{profileData?.role || 'User'}</p>
+                <p className="text-gray-500 text-sm">{profileData?.email}</p>
               </div>
             </div>
             <button
@@ -181,38 +307,56 @@ const ProfileSettings = () => {
           <div className="grid grid-cols-2 gap-6 mb-8">
             <div>
               <label className="block text-sm font-semibold text-gray-900 mb-2">
-                First Name
+                Full Name
               </label>
               <div className="bg-indigo-50 rounded-lg px-4 py-3 text-gray-700">
-                {profileData.firstName}
+                {profileData?.fullName || 'N/A'}
               </div>
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-900 mb-2">
-                Last Name
+                Email
               </label>
               <div className="bg-indigo-50 rounded-lg px-4 py-3 text-gray-700">
-                {profileData.lastName}
+                {profileData?.email || 'N/A'}
               </div>
             </div>
           </div>
 
-          <h3 className="text-lg font-bold text-gray-900 mb-4">Address</h3>
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-2 gap-6 mb-8">
             <div>
               <label className="block text-sm font-semibold text-gray-900 mb-2">
-                Country Name
+                Role
               </label>
-              <div className="bg-indigo-50 rounded-lg px-4 py-3 text-gray-700">
-                {profileData.country}
+              <div className="bg-indigo-50 rounded-lg px-4 py-3 text-gray-700 capitalize">
+                {profileData?.role || 'N/A'}
               </div>
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-900 mb-2">
-                Address
+                Phone
               </label>
               <div className="bg-indigo-50 rounded-lg px-4 py-3 text-gray-700">
-                {profileData.address}
+                {profileData?.phone || 'N/A'}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-semibold text-gray-900 mb-2">
+                Account Status
+              </label>
+              <div className="bg-indigo-50 rounded-lg px-4 py-3 text-gray-700">
+                {profileData?.isActive ? 'Active' : 'Inactive'}
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-gray-900 mb-2">
+                Member Since
+              </label>
+              <div className="bg-indigo-50 rounded-lg px-4 py-3 text-gray-700">
+                {profileData?.createdAt ? new Date(profileData.createdAt).toLocaleDateString() : 'N/A'}
               </div>
             </div>
           </div>
@@ -223,7 +367,7 @@ const ProfileSettings = () => {
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-bold text-gray-900">Password Settings</h2>
             <button
-              onClick={handleEditProfile}
+              onClick={handleChangePassword}
               className="flex items-center gap-2 text-gray-600 border py-1 px-3 cursor-pointer rounded-lg hover:text-gray-900 transition-colors"
             >
               <span className="text-sm font-medium">Edit</span>
@@ -239,40 +383,71 @@ const ProfileSettings = () => {
         </div>
       </div>
 
-      {/* Edit Profile Dialog */}
+      {/* Edit Profile Dialog - Personal Information */}
       <Dialog open={isEditProfileOpen} onOpenChange={setIsEditProfileOpen}>
         <DialogContent className="sm:max-w-[600px] bg-white rounded-2xl p-0">
           <div className="p-6">
             <DialogHeader className="flex flex-row items-center justify-between mb-6">
               <DialogTitle className="text-2xl font-bold text-gray-900">
-                Edit Profile
+                Edit Personal Information
               </DialogTitle>
+              <button
+                onClick={handleCancelEdit}
+                className="w-8 h-8 rounded-full bg-gray-600 hover:bg-gray-700 flex items-center justify-center transition-colors"
+              >
+                <X className="w-5 h-5 text-white" />
+              </button>
             </DialogHeader>
 
             <div className="space-y-5">
+              {/* Image Upload */}
+              <div className="flex flex-col items-center mb-6">
+                <div className="relative mb-4">
+                  <Image
+                    src={previewImage ? (previewImage.startsWith('data:') ? previewImage : `${baseURL}/${previewImage}`) : '/placeholder.png'}
+                    alt="Profile"
+                    width={80}
+                    height={80}
+                    className="w-20 h-20 rounded-full object-cover border-2 border-gray-300"
+                  />
+                </div>
+                <label className="cursor-pointer">
+                  <span className="bg-indigo-500 text-white px-4 py-2 rounded-lg hover:bg-indigo-600 transition-colors">
+                    Change Image
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-semibold text-gray-900 mb-2">
-                    First Name
+                    Full Name
                   </label>
                   <Input
-                    placeholder="Enter first name here.."
-                    value={editFormData.firstName}
+                    placeholder="Enter full name here.."
+                    value={editFormData.fullName}
                     onChange={(e) =>
-                      setEditFormData({ ...editFormData, firstName: e.target.value })
+                      setEditFormData({ ...editFormData, fullName: e.target.value })
                     }
                     className="w-full bg-indigo-50 border-0 rounded-lg px-4 py-3 placeholder:text-gray-400"
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-gray-900 mb-2">
-                    Last Name
+                    Email
                   </label>
                   <Input
-                    placeholder="Enter last name here.."
-                    value={editFormData.lastName}
+                    type="email"
+                    placeholder="Enter email here.."
+                    value={editFormData.email}
                     onChange={(e) =>
-                      setEditFormData({ ...editFormData, lastName: e.target.value })
+                      setEditFormData({ ...editFormData, email: e.target.value })
                     }
                     className="w-full bg-indigo-50 border-0 rounded-lg px-4 py-3 placeholder:text-gray-400"
                   />
@@ -282,26 +457,26 @@ const ProfileSettings = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-semibold text-gray-900 mb-2">
-                    Country Name
+                    Role
                   </label>
                   <Input
-                    placeholder="Enter country name here.."
-                    value={editFormData.country}
+                    placeholder="Enter role here.."
+                    value={editFormData.role}
                     onChange={(e) =>
-                      setEditFormData({ ...editFormData, country: e.target.value })
+                      setEditFormData({ ...editFormData, role: e.target.value })
                     }
                     className="w-full bg-indigo-50 border-0 rounded-lg px-4 py-3 placeholder:text-gray-400"
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-gray-900 mb-2">
-                    Address
+                    Phone
                   </label>
                   <Input
-                    placeholder="Enter address name here.."
-                    value={editFormData.address}
+                    placeholder="Enter phone number here.."
+                    value={editFormData.phone}
                     onChange={(e) =>
-                      setEditFormData({ ...editFormData, address: e.target.value })
+                      setEditFormData({ ...editFormData, phone: e.target.value })
                     }
                     className="w-full bg-indigo-50 border-0 rounded-lg px-4 py-3 placeholder:text-gray-400"
                   />
@@ -312,15 +487,17 @@ const ProfileSettings = () => {
                 <Button
                   onClick={handleCancelEdit}
                   variant="outline"
+                  disabled={isUpdating}
                   className="flex-1 bg-red-50 text-red-600 hover:bg-red-100 border-0 py-3 rounded-lg font-semibold"
                 >
                   Cancel
                 </Button>
                 <Button
                   onClick={handleSaveProfile}
+                  disabled={isUpdating}
                   className="flex-1 bg-indigo-500 hover:bg-indigo-600 text-white py-3 rounded-lg font-semibold"
                 >
-                  Send Changes
+                  {isUpdating ? 'Saving...' : 'Save Changes'}
                 </Button>
               </div>
             </div>
@@ -353,11 +530,11 @@ const ProfileSettings = () => {
                   <Input
                     type={showPasswords.current ? 'text' : 'password'}
                     placeholder="Enter current password here.."
-                    value={passwordFormData.currentPassword}
+                    value={passwordFormData.oldPassword}
                     onChange={(e) =>
                       setPasswordFormData({
                         ...passwordFormData,
-                        currentPassword: e.target.value,
+                        oldPassword: e.target.value,
                       })
                     }
                     className="w-full bg-indigo-50 border-0 rounded-lg px-4 py-3 pr-10 placeholder:text-gray-400"
@@ -442,15 +619,17 @@ const ProfileSettings = () => {
                 <Button
                   onClick={handleCancelPassword}
                   variant="outline"
+                  disabled={isChangingPassword}
                   className="flex-1 bg-red-50 text-red-600 hover:bg-red-100 border-0 py-3 rounded-lg font-semibold"
                 >
                   Cancel
                 </Button>
                 <Button
                   onClick={handleSavePassword}
+                  disabled={isChangingPassword}
                   className="flex-1 bg-indigo-500 hover:bg-indigo-600 text-white py-3 rounded-lg font-semibold"
                 >
-                  Send Changes
+                  {isChangingPassword ? 'Changing...' : 'Save Changes'}
                 </Button>
               </div>
             </div>

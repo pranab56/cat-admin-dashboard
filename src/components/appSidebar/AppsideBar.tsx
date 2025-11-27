@@ -12,7 +12,6 @@ import {
 import {
   Bell,
   LayoutGrid,
-  Settings,
   User,
   Users
 } from "lucide-react";
@@ -30,7 +29,8 @@ type SidebarItem = {
 const sidebars: SidebarItem[] = [
   { name: "Overview", path: "/", icon: LayoutGrid },
   { name: "User Management", path: "/user-management", icon: Users },
-  { name: "App Setting", path: "/app-setting", icon: Settings },
+  { name: "Subscribe Plan", path: "/subscribe", icon: Users },
+  // { name: "App Setting", path: "/app-setting", icon: Settings },
   { name: "Notification", path: "/notifications", icon: Bell },
   { name: "Profile", path: "/settings", icon: User },
 ];

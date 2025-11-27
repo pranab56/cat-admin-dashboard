@@ -4,20 +4,23 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { FormEvent, useState } from 'react';
+import toast from 'react-hot-toast';
+import { useForgotEmailMutation } from '../../../../features/auth/authApi';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState<string>('');
   const [error, setError] = useState<string>('');
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+
   const [isSuccess, setIsSuccess] = useState<boolean>(false);
   const router = useRouter();
+  const [forgotEmail, { isLoading }] = useForgotEmailMutation();
 
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   };
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>): void => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>): void => {
     e.preventDefault();
     setError('');
 
@@ -31,17 +34,16 @@ export default function ForgotPasswordPage() {
       setError('Please enter a valid email address');
       return;
     }
+    try {
+      const response = await forgotEmail({ email: email }).unwrap();
+      toast.success(response.message || 'Email sent to OTP successfully!');
+      router.push(`/auth/verify-email?token=${response.data.forgetToken}`);
+    } catch (error) {
+      console.log(error)
+      toast.error(error.data.message || 'Failed to create package:');
+    }
 
-    // If validation passes, proceed with OTP sending
-    setIsLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
-      setIsSuccess(true);
-      alert(`OTP has been sent to ${email}`);
-      router.push('/auth/verify-email');
-    }, 1500);
   };
 
   return (

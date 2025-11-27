@@ -3,28 +3,50 @@
 import { Eye, EyeOff } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { ChangeEvent, useState } from 'react';
+import toast from 'react-hot-toast';
+import { useLoginMutation } from '../../../../features/auth/authApi';
+import { saveToken } from '../../../../utils/storage';
+
+interface LoginErrors {
+  email: string;
+  password: string;
+}
+
+interface LoginResponse {
+  data: {
+    accessToken: string;
+  };
+  message?: string;
+}
+
+interface LoginError {
+  data: {
+    message: string;
+  };
+}
 
 export default function LoginPage() {
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [rememberMe, setRememberMe] = useState<boolean>(false);
-  const [errors, setErrors] = useState<{ email: string; password: string }>({
+  const [errors, setErrors] = useState<LoginErrors>({
     email: '',
     password: ''
   });
-  const [isLoading, setIsLoading] = useState<boolean>(false);
 
-
+  const router = useRouter();
+  const [login, { isLoading }] = useLoginMutation();
 
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   };
 
-  const handleSubmit = (): void => {
-    const newErrors = { email: '', password: '' };
+  const handleSubmit = async (): Promise<void> => {
+    const newErrors: LoginErrors = { email: '', password: '' };
 
     if (!email) {
       newErrors.email = 'Email address is required';
@@ -40,16 +62,38 @@ export default function LoginPage() {
 
     setErrors(newErrors);
 
-    if (!newErrors.email && !newErrors.password) {
-      setIsLoading(true);
-      setTimeout(() => {
-        setIsLoading(false);
-        alert('Login successful!');
-      }, 1500);
+    // If there are errors, don't submit
+    if (newErrors.email || newErrors.password) {
+      return;
+    }
+
+    const candidate = { email: email, password: password };
+    try {
+      const response = await login(candidate).unwrap() as LoginResponse;
+      console.log('Login successful:', response);
+      saveToken(response.data.accessToken);
+      toast.success(response.message || 'Login successful!');
+      router.push('/');
+    } catch (error) {
+      console.log(error);
+      const loginError = error as LoginError;
+      toast.error(loginError.data.message || 'Login failed. Please check your credentials and try again.');
     }
   };
 
+  const handleEmailChange = (e: ChangeEvent<HTMLInputElement>): void => {
+    setEmail(e.target.value);
+    if (errors.email) setErrors({ ...errors, email: '' });
+  };
 
+  const handlePasswordChange = (e: ChangeEvent<HTMLInputElement>): void => {
+    setPassword(e.target.value);
+    if (errors.password) setErrors({ ...errors, password: '' });
+  };
+
+  const handleRememberMeChange = (e: ChangeEvent<HTMLInputElement>): void => {
+    setRememberMe(e.target.checked);
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-100 via-purple-50 to-blue-50 p-4">
@@ -79,10 +123,7 @@ export default function LoginPage() {
               id="email"
               type="email"
               value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-                if (errors.email) setErrors({ ...errors, email: '' });
-              }}
+              onChange={handleEmailChange}
               placeholder="Enter your email address"
               className={`w-full px-4 py-3 bg-gray-50 border ${errors.email ? 'border-red-500' : 'border-transparent'
                 } rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all`}
@@ -102,10 +143,7 @@ export default function LoginPage() {
                 id="password"
                 type={showPassword ? 'text' : 'password'}
                 value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                  if (errors.password) setErrors({ ...errors, password: '' });
-                }}
+                onChange={handlePasswordChange}
                 placeholder="Enter password here..."
                 className={`w-full px-4 py-3 bg-gray-50 border ${errors.password ? 'border-red-500' : 'border-transparent'
                   } rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all pr-12`}
@@ -129,7 +167,7 @@ export default function LoginPage() {
               <input
                 type="checkbox"
                 checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
+                onChange={handleRememberMeChange}
                 className="w-4 h-4 text-blue-500 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
               />
               <span className="ml-2 text-sm text-gray-700">Remember Me</span>
@@ -147,13 +185,11 @@ export default function LoginPage() {
             type="button"
             onClick={handleSubmit}
             disabled={isLoading}
-            className="w-full bg-[#668CF9] hover:bg-[#668CF9] text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-[#668CF9] cursor-pointer hover:bg-[#668CF9] text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoading ? 'Loading...' : 'Sign In'}
           </button>
         </div>
-
-
       </div>
     </div>
   );
