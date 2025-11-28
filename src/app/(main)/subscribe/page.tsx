@@ -3,6 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
+import CustomLoading from '../../../components/Loading/CustomLoading';
 import AddModal from '../../../components/subscribe/AddModal';
 import DeleteModal from '../../../components/subscribe/DeleteModal';
 import EditModal from '../../../components/subscribe/EditModal';
@@ -15,10 +16,28 @@ import {
   useUpdatePackageMutation
 } from '../../../features/subscribe/subscribeApi';
 
+// Define API response types
+interface ApiResponse {
+  message: string;
+  data: Plan[] | Plan;
+  success?: boolean;
+}
+
+interface ApiError {
+  data: {
+    message: string;
+  };
+  status?: number;
+}
+
+
+
+
+
 export default function SubscriptionPlans() {
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState<boolean>(false);
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
 
   // API hooks
@@ -27,68 +46,64 @@ export default function SubscriptionPlans() {
   const [updatePackage, { isLoading: isUpdatePackageLoading }] = useUpdatePackageMutation();
   const [deletePackage, { isLoading: isDeletePackageLoading }] = useDeletePackageMutation();
 
-  // Extract plans from API response
-  const plans = packagesResponse?.data || [];
+  // Extract plans from API response with proper typing
+  const plans: Plan[] = packagesResponse?.data as Plan[] || [];
 
-  const handleAddPlan = async (newPlanData: Omit<Plan, '_id' | 'createdAt' | 'updatedAt'>) => {
+  const handleAddPlan = async (newPlanData: Omit<Plan, '_id' | 'createdAt' | 'updatedAt'>): Promise<void> => {
     try {
-      const response = await createPackage(newPlanData).unwrap();
+      const response = await createPackage(newPlanData).unwrap() as ApiResponse;
       refetch(); // Refresh the list
       setIsAddModalOpen(false);
-      console.log("add response", response)
+      console.log("add response", response);
       toast.success(response.message || 'Package created successfully!');
     } catch (error) {
-      toast.error(error.data.message || 'Failed to create package:');
+      const apiError = error as ApiError;
+      toast.error(apiError.data?.message || 'Failed to create package');
     }
   };
 
-  const handleEditPlan = async (updatedPlanData: Plan) => {
+  const handleEditPlan = async (updatedPlanData: Plan): Promise<void> => {
     try {
       const { _id, ...data } = updatedPlanData;
-      const response = await updatePackage({ id: _id, data }).unwrap();
+      const response = await updatePackage({ id: _id, data }).unwrap() as ApiResponse;
       refetch(); // Refresh the list
       setIsEditModalOpen(false);
       setSelectedPlan(null);
-      console.log("edit Response", response)
+      console.log("edit Response", response);
       toast.success(response.message || 'Package updated successfully!');
     } catch (error) {
-      console.error('Failed to update package:', error);
-      toast.error(error.data.message || 'Failed to create package:');
+      const apiError = error as ApiError;
+      console.error('Failed to update package:', apiError);
+      toast.error(apiError.data?.message || 'Failed to update package');
     }
   };
 
-  const handleDeletePlan = async (planId: string) => {
-
-    // console.log(planId)
+  const handleDeletePlan = async (planId: string): Promise<void> => {
     try {
-      const response = await deletePackage(planId).unwrap();
+      const response = await deletePackage(planId).unwrap() as ApiResponse;
       refetch(); // Refresh the list
       setIsDeleteModalOpen(false);
-      toast.success(response.message || 'Plan deleted successfully!');
       setSelectedPlan(null);
       toast.success(response.message || 'Plan deleted successfully!');
     } catch (error) {
-      console.error('Failed to delete package:', error);
-      toast.error(error.data.message || 'Failed to create package:');
+      const apiError = error as ApiError;
+      console.error('Failed to delete package:', apiError);
+      toast.error(apiError.data?.message || 'Failed to delete package');
     }
   };
 
-  const openEditModal = (plan: Plan) => {
+  const openEditModal = (plan: Plan): void => {
     setSelectedPlan(plan);
     setIsEditModalOpen(true);
   };
 
-  const openDeleteModal = (plan: Plan) => {
+  const openDeleteModal = (plan: Plan): void => {
     setSelectedPlan(plan);
     setIsDeleteModalOpen(true);
   };
 
   if (isPackagesLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8 flex items-center justify-center">
-        <div className="text-center">Loading packages...</div>
-      </div>
-    );
+    return <CustomLoading />;
   }
 
   return (
@@ -105,7 +120,7 @@ export default function SubscriptionPlans() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-4 gap-6">
-          {plans.map((plan) => (
+          {plans.map((plan: Plan) => (
             <PlanCard
               key={plan._id}
               plan={plan}

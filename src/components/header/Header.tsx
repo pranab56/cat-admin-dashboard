@@ -18,8 +18,6 @@ export default function Header() {
 
 
   const userName = "Jacob Jones";
-  const userRole = "Admin";
-  const userImage = "https://api.dicebear.com/7.x/avataaars/svg?seed=Jacob";
   const router = useRouter();
 
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);

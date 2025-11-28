@@ -7,11 +7,25 @@ import { FormEvent, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useForgotEmailMutation } from '../../../../features/auth/authApi';
 
+// Define types for the API response
+interface ForgotEmailResponse {
+  message: string;
+  data: {
+    forgetToken: string;
+  };
+}
+
+interface ApiError {
+  data: {
+    message: string;
+  };
+}
+
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState<string>('');
   const [error, setError] = useState<string>('');
+  const [isSuccess] = useState<boolean>(false);
 
-  const [isSuccess, setIsSuccess] = useState<boolean>(false);
   const router = useRouter();
   const [forgotEmail, { isLoading }] = useForgotEmailMutation();
 
@@ -20,7 +34,7 @@ export default function ForgotPasswordPage() {
     return emailRegex.test(email);
   };
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>): void => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
     setError('');
 
@@ -34,16 +48,16 @@ export default function ForgotPasswordPage() {
       setError('Please enter a valid email address');
       return;
     }
+
     try {
-      const response = await forgotEmail({ email: email }).unwrap();
+      const response = await forgotEmail({ email: email }).unwrap() as ForgotEmailResponse;
       toast.success(response.message || 'Email sent to OTP successfully!');
       router.push(`/auth/verify-email?token=${response.data.forgetToken}`);
     } catch (error) {
-      console.log(error)
-      toast.error(error.data.message || 'Failed to create package:');
+      const apiError = error as ApiError;
+      console.log(apiError);
+      toast.error(apiError.data.message || 'Failed to create package:');
     }
-
-
   };
 
   return (
@@ -89,7 +103,7 @@ export default function ForgotPasswordPage() {
               id="email"
               type="email"
               value={email}
-              onChange={(e) => {
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                 setEmail(e.target.value);
                 if (error) setError('');
               }}

@@ -8,29 +8,14 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Eye, EyeOff, X } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
+import CustomLoading from '../../../components/Loading/CustomLoading';
 import { useChangePasswordMutation, useEditProfileMutation, useGetProfileQuery } from "../../../features/settings/settingsApi";
 import { baseURL } from '../../../utils/BaseURL';
 
-interface ProfileData {
-  _id: string;
-  profile: string;
-  fullName: string;
-  email: string;
-  role: string;
-  isActive: boolean;
-  isDeleted: boolean;
-  phone: string;
-  subscriptionId: string | null;
-  isStripeConnectedAccount: boolean;
-  userDeviceId: string | null;
-  createdAt: string;
-  updatedAt: string;
-  __v: number;
-}
-
+// Interface definitions
 interface EditFormData {
   profile: string | File;
   fullName: string;
@@ -49,6 +34,34 @@ interface ShowPasswords {
   current: boolean;
   new: boolean;
   confirm: boolean;
+}
+
+interface ProfileData {
+  profile: string;
+  fullName: string;
+  email: string;
+  role: string;
+  phone: string;
+  isActive: boolean;
+  createdAt: string;
+}
+
+interface ApiResponse {
+  success: boolean;
+  message: string;
+  data?: ProfileData;
+}
+
+interface ApiError {
+  data?: {
+    message: string;
+  };
+  status?: number;
+}
+
+interface ChangePasswordRequest {
+  oldPassword: string;
+  newPassword: string;
 }
 
 const ProfileSettings = () => {
@@ -133,7 +146,7 @@ const ProfileSettings = () => {
       formData.append('role', editFormData.role);
       formData.append('phone', editFormData.phone);
 
-      const response = await updateProfile(formData).unwrap();
+      const response = await updateProfile(formData).unwrap() as ApiResponse;
 
       if (response.success) {
         showMessage('success', response.message || 'Profile updated successfully');
@@ -142,9 +155,10 @@ const ProfileSettings = () => {
       } else {
         showMessage('error', response.message || 'Failed to update profile');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Update error:', error);
-      showMessage('error', error?.data?.message || 'Failed to update profile');
+      const apiError = error as ApiError;
+      showMessage('error', apiError?.data?.message || 'Failed to update profile');
     }
   };
 
@@ -180,10 +194,12 @@ const ProfileSettings = () => {
     }
 
     try {
-      const response = await changePassword({
+      const passwordData: ChangePasswordRequest = {
         oldPassword: passwordFormData.oldPassword,
         newPassword: passwordFormData.newPassword,
-      }).unwrap();
+      };
+
+      const response = await changePassword(passwordData).unwrap() as ApiResponse;
 
       if (response.success) {
         showMessage('success', response.message || 'Password changed successfully');
@@ -196,8 +212,9 @@ const ProfileSettings = () => {
       } else {
         showMessage('error', response.message || 'Failed to change password');
       }
-    } catch (error: any) {
-      showMessage('error', error?.data?.message || 'Failed to change password');
+    } catch (error: unknown) {
+      const apiError = error as ApiError;
+      showMessage('error', apiError?.data?.message || 'Failed to change password');
     }
   };
 
@@ -237,16 +254,11 @@ const ProfileSettings = () => {
     }
   };
 
-
   if (isLoading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="text-lg">Loading...</div>
-      </div>
-    );
+    return <CustomLoading />
   }
 
-  const profileData = profileResponse?.data;
+  const profileData = profileResponse?.data as ProfileData | undefined;
 
   return (
     <div className="">
@@ -391,12 +403,6 @@ const ProfileSettings = () => {
               <DialogTitle className="text-2xl font-bold text-gray-900">
                 Edit Personal Information
               </DialogTitle>
-              <button
-                onClick={handleCancelEdit}
-                className="w-8 h-8 rounded-full bg-gray-600 hover:bg-gray-700 flex items-center justify-center transition-colors"
-              >
-                <X className="w-5 h-5 text-white" />
-              </button>
             </DialogHeader>
 
             <div className="space-y-5">
@@ -513,12 +519,6 @@ const ProfileSettings = () => {
               <DialogTitle className="text-2xl font-bold text-gray-900">
                 Change Password
               </DialogTitle>
-              <button
-                onClick={handleCancelPassword}
-                className="w-8 h-8 rounded-full bg-gray-600 hover:bg-gray-700 flex items-center justify-center transition-colors"
-              >
-                <X className="w-5 h-5 text-white" />
-              </button>
             </DialogHeader>
 
             <div className="space-y-5">

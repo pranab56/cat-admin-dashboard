@@ -21,7 +21,7 @@ export default function DeleteModal({ isOpen, onClose, plan, onDelete, isLoading
         </DialogHeader>
 
         <p className="text-gray-600 my-6">
-          Are you sure you want to delete "{plan?.title}"? This action cannot be undone.
+          Are you sure you want to delete &quot;{plan?.title}`&quot;? This action cannot be undone.
         </p>
 
         <div className="flex gap-4">

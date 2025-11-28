@@ -1,13 +1,13 @@
 export const saveToken = (token) => {
-  localStorage.setItem("adminToken", token);
+  localStorage.setItem("catAdmin", token);
 };
 
 export const getToken = () => {
-  return localStorage.getItem("adminToken");
+  return localStorage.getItem("catAdmin");
 };
 
 export const removeToken = () => {
-  localStorage.removeItem("adminToken");
+  localStorage.removeItem("catAdmin");
   localStorage.removeItem("adminLoginId");
 };
 

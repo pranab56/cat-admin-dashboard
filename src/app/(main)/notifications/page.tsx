@@ -2,9 +2,9 @@
 
 import { Button } from '@/components/ui/button';
 import { CheckCircle, Loader2, Trash2 } from 'lucide-react';
-import { toast } from 'sonner'; // or your preferred toast library
+import React from 'react';
+import { toast } from 'sonner';
 import {
-  useDeleteNotificationMutation,
   useGetAllNotificationQuery,
   useReadAllNotificationMutation
 } from "../../../features/notifications/notificationsApi";
@@ -21,23 +21,17 @@ interface Notification {
   updatedAt: string;
 }
 
-interface ApiResponse {
-  success: boolean;
-  message: string;
-  meta: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPage: number;
-  };
-  data: Notification[];
+
+interface FormattedDate {
+  date: string;
+  time: string;
 }
 
-const NotificationSystem = () => {
+const NotificationSystem: React.FC = (): React.ReactElement => {
   // API hooks
   const { data: apiResponse, isLoading, error, refetch } = useGetAllNotificationQuery({});
   const [readAllNotification, { isLoading: isReadingAll }] = useReadAllNotificationMutation();
-  const [deleteNotification, { isLoading: isDeleting }] = useDeleteNotificationMutation();
+  const [deleteNotification, { isLoading: isDeleting }] = useReadAllNotificationMutation();
 
   // Handle read all notifications
   const handleReadAll = async (): Promise<void> => {
@@ -64,7 +58,7 @@ const NotificationSystem = () => {
   };
 
   // Format date to display
-  const formatDate = (dateString: string): { date: string; time: string } => {
+  const formatDate = (dateString: string): FormattedDate => {
     const date = new Date(dateString);
     const dateFormatted = date.toLocaleDateString('en-US');
     const timeFormatted = date.toLocaleTimeString('en-US', {
@@ -76,7 +70,7 @@ const NotificationSystem = () => {
   };
 
   // Get notification icon based on type
-  const getNotificationIcon = (type: string) => {
+  const getNotificationIcon = (type: string): React.ReactElement => {
     switch (type) {
       case 'success':
         return <CheckCircle className="w-5 h-5 text-green-600" />;
@@ -90,7 +84,7 @@ const NotificationSystem = () => {
   };
 
   // Get notification background color based on read status
-  const getNotificationBgColor = (isRead: boolean) => {
+  const getNotificationBgColor = (isRead: boolean): string => {
     return isRead ? 'bg-gray-50' : 'bg-blue-50 border border-blue-200';
   };
 
@@ -119,7 +113,7 @@ const NotificationSystem = () => {
     );
   }
 
-  const notifications = apiResponse?.data || [];
+  const notifications: Notification[] = apiResponse?.data || [];
 
   return (
     <div className="">
@@ -153,10 +147,10 @@ const NotificationSystem = () => {
               <div className="text-center py-12">
                 <CheckCircle className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                 <p className="text-gray-500 text-lg">No notifications found</p>
-                <p className="text-gray-400 mt-1">You're all caught up!</p>
+                <p className="text-gray-400 mt-1">You&lsquo;ve re all caught up!</p>
               </div>
             ) : (
-              notifications.map((notification) => {
+              notifications.map((notification: Notification) => {
                 const { date, time } = formatDate(notification.createdAt);
 
                 return (
@@ -179,8 +173,8 @@ const NotificationSystem = () => {
                             {date} / {time}
                           </p>
                           <span className={`text-xs px-2 py-1 rounded-full ${notification.isRead
-                              ? 'bg-gray-200 text-gray-600'
-                              : 'bg-blue-200 text-blue-700'
+                            ? 'bg-gray-200 text-gray-600'
+                            : 'bg-blue-200 text-blue-700'
                             }`}>
                             {notification.isRead ? 'Read' : 'Unread'}
                           </span>

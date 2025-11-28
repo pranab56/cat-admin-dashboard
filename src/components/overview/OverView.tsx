@@ -1,22 +1,38 @@
 "use client";
 import { Calendar, Crown, UserCheck, Users } from "lucide-react";
+import React from 'react';
 import { useOverViewStateCardQuery } from "../../features/overview/overviewApi";
+import CustomLoading from '../Loading/CustomLoading';
 import EventsLineChart from './EventsLineChart';
 import StatsCard from './StatsCard';
 import UserDonutChart from './UserDonutChart';
 import UserListTable from './UserListTable';
 
-export default function Overview() {
-  const { data: stateData } = useOverViewStateCardQuery({});
+// Interface for the API response
+interface UserTypeCount {
+  type: string;
+  count: number;
+}
+
+
+
+
+
+export default function Overview(): React.ReactElement {
+  const { data: stateData, isLoading } = useOverViewStateCardQuery({});
 
   // Extract data from API response
-  const totalUsers = stateData?.data?.allUsers || 0;
-  const totalEvents = stateData?.data?.totalEvents || 0;
+  const totalUsers: number = stateData?.data?.allUsers || 0;
+  const totalEvents: number = stateData?.data?.totalEvents || 0;
 
   // Extract free and premium users from result array
-  const resultData = stateData?.data?.result || [];
-  const freeUsers = resultData.find(item => item.type === 'free')?.count || 0;
-  const premiumUsers = resultData.find(item => item.type === 'premium')?.count || 0;
+  const resultData: UserTypeCount[] = stateData?.data?.result || [];
+  const freeUsers: number = resultData.find((item: UserTypeCount) => item.type === 'free')?.count || 0;
+  const premiumUsers: number = resultData.find((item: UserTypeCount) => item.type === 'premium')?.count || 0;
+
+  if (isLoading) {
+    return <CustomLoading />;
+  }
 
   return (
     <div className="">

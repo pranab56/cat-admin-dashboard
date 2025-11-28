@@ -8,30 +8,47 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useState } from "react";
+import React, { useState } from 'react';
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { useAllEarningResioChartQuery } from '../../features/overview/overviewApi';
 
+// Interfaces for API response and chart data
+interface EarningChartItem {
+  month: number;
+  totalIncome: number;
+}
+
+
+
+interface ChartDataItem {
+  month: string;
+  value: number;
+}
+
 // Month names for display
-const monthNames = [
+const monthNames: string[] = [
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
 ];
 
-export default function EventsLineChart() {
-  const currentYear = new Date().getFullYear();
-  const [selectedYear, setSelectedYear] = useState(currentYear);
+export default function EventsLineChart(): React.ReactElement {
+  const currentYear: number = new Date().getFullYear();
+  const [selectedYear, setSelectedYear] = useState<number>(currentYear);
 
   const { data: EarningChartData } = useAllEarningResioChartQuery(selectedYear);
 
   // Generate year options (current year and previous 2 years)
-  const yearOptions = [currentYear, currentYear - 1, currentYear - 2];
+  const yearOptions: number[] = [currentYear, currentYear - 1, currentYear - 2];
 
   // Transform API data for the chart
-  const chartData = EarningChartData?.data?.map(item => ({
+  const chartData: ChartDataItem[] = EarningChartData?.data?.map((item: EarningChartItem) => ({
     month: monthNames[item.month - 1], // Convert month number to name
     value: item.totalIncome
   })) || [];
+
+  const handleYearChange = (value: string): void => {
+    setSelectedYear(Number(value));
+  };
 
   return (
     <Card className="border-0 shadow-sm">
@@ -45,12 +62,12 @@ export default function EventsLineChart() {
           <label className="text-sm font-medium text-gray-700">
             Year:
           </label>
-          <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(Number(value))}>
+          <Select value={selectedYear.toString()} onValueChange={handleYearChange}>
             <SelectTrigger className="w-[120px]">
               <SelectValue placeholder="Select year" />
             </SelectTrigger>
             <SelectContent>
-              {yearOptions.map((year) => (
+              {yearOptions.map((year: number) => (
                 <SelectItem key={year} value={year.toString()}>
                   {year}
                 </SelectItem>
@@ -88,7 +105,7 @@ export default function EventsLineChart() {
                 padding: "8px 12px",
               }}
               labelStyle={{ color: "#374151", fontWeight: 600 }}
-              formatter={(value) => [`${value}`, 'Income']}
+              formatter={(value: number) => [`${value}`, 'Income']}
             />
             <Area
               type="monotone"

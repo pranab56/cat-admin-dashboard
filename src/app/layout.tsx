@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "react-hot-toast";
+import ProtectedRoute from '../components/ProtectedRoute';
 import ClientLayout from './ClientLayout';
 import "./globals.css";
 
@@ -20,8 +21,8 @@ const geistMono = Geist_Mono({
 // });
 
 export const metadata: Metadata = {
-  title: "Peterson Dashboard",
-  description: "Peterson Dashboard",
+  title: "Cat Admin Dashboard",
+  description: "Cat Admin Dashboard",
   icons: {
     icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
   },
@@ -42,10 +43,12 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable}   antialiased h-screen`}
       >
-        <ClientLayout>
-          {children}
-        </ClientLayout>
-        <Toaster />
+        <ProtectedRoute>
+          <ClientLayout>
+            {children}
+          </ClientLayout>
+          <Toaster />
+        </ProtectedRoute>
       </body>
     </html>
   );

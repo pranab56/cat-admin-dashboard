@@ -3,7 +3,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -21,10 +20,12 @@ import {
 } from "@/components/ui/table";
 import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import Image from 'next/image';
-import { useMemo, useState } from "react";
+import React, { useMemo, useState } from 'react';
 import { useAllUsersQuery, useBlockUserMutation } from '../../features/overview/overviewApi';
 import { baseURL } from '../../utils/BaseURL';
+import CustomLoading from '../Loading/CustomLoading';
 
+// Interfaces
 interface User {
   _id: string;
   profile: string;
@@ -41,31 +42,24 @@ interface User {
   updatedAt: string;
 }
 
-interface ApiResponse {
-  success: boolean;
-  message: string;
-  meta: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPage: number;
-  };
-  data: User[];
+
+
+interface ConfirmationModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  userName: string;
+  isBlocking: boolean;
 }
 
+// Confirmation Modal Component
 function ConfirmationModal({
   isOpen,
   onClose,
   onConfirm,
   userName,
   isBlocking
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  onConfirm: () => void;
-  userName: string;
-  isBlocking: boolean;
-}) {
+}: ConfirmationModalProps): React.ReactElement | null {
   if (!isOpen) return null;
 
   return (
@@ -124,39 +118,42 @@ function ConfirmationModal({
   );
 }
 
-export default function UserListTable() {
-  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [modalOpen, setModalOpen] = useState(false);
+export default function UserListTable(): React.ReactElement {
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [modalOpen, setModalOpen] = useState<boolean>(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
   // Search and filter states
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [userTypeFilter, setUserTypeFilter] = useState("all");
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [userTypeFilter, setUserTypeFilter] = useState<string>("all");
 
   const { data: allUserData, isLoading: allUserLoading, refetch } = useAllUsersQuery({});
   const [blockUser, { isLoading: blockUserLoading }] = useBlockUserMutation();
 
-  const users = allUserData?.data || [];
+  // Wrap users in useMemo to prevent unnecessary re-renders
+  const users: User[] = useMemo(() => {
+    return allUserData?.data || [];
+  }, [allUserData?.data]); // Only depend on allUserData.data
+
   const meta = allUserData?.meta;
 
   // Filter users based on search and filter criteria
   const filteredUsers = useMemo(() => {
-    return users.filter((user) => {
+    return users.filter((user: User) => {
       // Search filter
-      const matchesSearch =
+      const matchesSearch: boolean =
         user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.email.toLowerCase().includes(searchTerm.toLowerCase());
 
       // Status filter
-      const matchesStatus =
+      const matchesStatus: boolean =
         statusFilter === "all" ||
         (statusFilter === "active" && user.isActive) ||
         (statusFilter === "blocked" && !user.isActive);
 
       // User type filter
-      const matchesUserType =
+      const matchesUserType: boolean | string =
         userTypeFilter === "all" ||
         (userTypeFilter === "premium" && user.subscriptionId) ||
         (userTypeFilter === "free" && !user.subscriptionId);
@@ -165,28 +162,15 @@ export default function UserListTable() {
     });
   }, [users, searchTerm, statusFilter, userTypeFilter]);
 
-  const toggleUserSelection = (userId: string) => {
-    setSelectedUsers((prev) =>
-      prev.includes(userId)
-        ? prev.filter((id) => id !== userId)
-        : [...prev, userId]
-    );
-  };
 
-  const toggleAllUsers = () => {
-    if (selectedUsers.length === filteredUsers.length) {
-      setSelectedUsers([]);
-    } else {
-      setSelectedUsers(filteredUsers.map((u) => u._id));
-    }
-  };
 
-  const handleBlockClick = (user: User) => {
+
+  const handleBlockClick = (user: User): void => {
     setSelectedUser(user);
     setModalOpen(true);
   };
 
-  const handleConfirmBlock = async () => {
+  const handleConfirmBlock = async (): Promise<void> => {
     if (selectedUser) {
       try {
         await blockUser(selectedUser._id).unwrap();
@@ -200,26 +184,26 @@ export default function UserListTable() {
     setSelectedUser(null);
   };
 
-  const handleCloseModal = () => {
+  const handleCloseModal = (): void => {
     setModalOpen(false);
     setSelectedUser(null);
   };
 
-  const getStatusVariant = (isActive: boolean) => {
+  const getStatusVariant = (isActive: boolean): string => {
     return isActive
       ? "bg-green-50 text-green-700 hover:bg-green-50"
       : "bg-red-50 text-red-700 hover:bg-red-50";
   };
 
-  const getStatusText = (isActive: boolean) => {
+  const getStatusText = (isActive: boolean): string => {
     return isActive ? "Active" : "Blocked";
   };
 
-  const getUserType = (user: User) => {
+  const getUserType = (user: User): string => {
     return user.subscriptionId ? "Premium" : "Free";
   };
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string): string => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: '2-digit',
@@ -227,7 +211,7 @@ export default function UserListTable() {
     });
   };
 
-  const getLastActive = (updatedAt: string) => {
+  const getLastActive = (updatedAt: string): string => {
     const updated = new Date(updatedAt);
     const now = new Date();
     const diffInHours = Math.floor((now.getTime() - updated.getTime()) / (1000 * 60 * 60));
@@ -242,14 +226,20 @@ export default function UserListTable() {
     }
   };
 
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
+    setSearchTerm(e.target.value);
+  };
+
+  const handleStatusFilterChange = (value: string): void => {
+    setStatusFilter(value);
+  };
+
+  const handleUserTypeFilterChange = (value: string): void => {
+    setUserTypeFilter(value);
+  };
+
   if (allUserLoading) {
-    return (
-      <Card className="border-0 shadow-sm">
-        <CardContent className="p-6">
-          <div className="text-center">Loading users...</div>
-        </CardContent>
-      </Card>
-    );
+    return <CustomLoading />;
   }
 
   return (
@@ -268,13 +258,13 @@ export default function UserListTable() {
                   type="text"
                   placeholder="Search here..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={handleSearchChange}
                   className="h-9 w-64 pl-9 pr-4 rounded-lg border border-gray-200 bg-white text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
 
               {/* Status Filter */}
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <Select value={statusFilter} onValueChange={handleStatusFilterChange}>
                 <SelectTrigger className="w-32 h-9 bg-gray-50 border-gray-200">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
@@ -286,7 +276,7 @@ export default function UserListTable() {
               </Select>
 
               {/* User Type Filter */}
-              <Select value={userTypeFilter} onValueChange={setUserTypeFilter}>
+              <Select value={userTypeFilter} onValueChange={handleUserTypeFilterChange}>
                 <SelectTrigger className="w-32 h-9 bg-gray-50 border-gray-200">
                   <SelectValue placeholder="User Type" />
                 </SelectTrigger>
@@ -305,12 +295,7 @@ export default function UserListTable() {
             <Table>
               <TableHeader>
                 <TableRow className="bg-gray-50 hover:bg-gray-50">
-                  <TableHead className="w-12">
-                    <Checkbox
-                      checked={selectedUsers.length === filteredUsers.length && filteredUsers.length > 0}
-                      onCheckedChange={toggleAllUsers}
-                    />
-                  </TableHead>
+
                   <TableHead className="font-semibold text-gray-700">User Name</TableHead>
                   <TableHead className="font-semibold text-gray-700">Email Address</TableHead>
                   <TableHead className="font-semibold text-gray-700">User Type</TableHead>
@@ -328,14 +313,9 @@ export default function UserListTable() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredUsers.map((user) => (
+                  filteredUsers.map((user: User) => (
                     <TableRow key={user._id} className="hover:bg-gray-50">
-                      <TableCell>
-                        <Checkbox
-                          checked={selectedUsers.includes(user._id)}
-                          onCheckedChange={() => toggleUserSelection(user._id)}
-                        />
-                      </TableCell>
+
                       <TableCell className="font-medium text-gray-900">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
@@ -411,7 +391,7 @@ export default function UserListTable() {
                   variant="outline"
                   size="icon"
                   className="h-9 w-9"
-                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  onClick={() => setCurrentPage((p: number) => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
                 >
                   <ChevronLeft className="h-4 w-4" />
@@ -433,7 +413,7 @@ export default function UserListTable() {
                   variant="outline"
                   size="icon"
                   className="h-9 w-9"
-                  onClick={() => setCurrentPage((p) => Math.min(meta.totalPage, p + 1))}
+                  onClick={() => setCurrentPage((p: number) => Math.min(meta.totalPage, p + 1))}
                   disabled={currentPage === meta.totalPage}
                 >
                   <ChevronRight className="h-4 w-4" />
