@@ -1,1 +1,1 @@
-export const baseURL = "http://10.10.7.65:5005";
+export const baseURL = "https://humayon5004.binarybards.online";
