@@ -6,12 +6,8 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import "../globals.css";
 
 export const metadata: Metadata = {
-  title: "Cat Admin Dashboard",
-  description: "Cat Admin Dashboard",
-  icons: {
-    icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
-  },
-  manifest: "/site.webmanifest",
+  title: "Cat Herding Admin Dashboard",
+  description: "Cat Herding Admin Dashboard",
 };
 
 export default function RootLayout({

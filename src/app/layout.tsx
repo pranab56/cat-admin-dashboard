@@ -23,10 +23,6 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Cat Admin Dashboard",
   description: "Cat Admin Dashboard",
-  icons: {
-    icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
-  },
-  manifest: "/site.webmanifest",
 };
 
 export default function RootLayout({
