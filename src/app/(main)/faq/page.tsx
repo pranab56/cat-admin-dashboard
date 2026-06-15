@@ -54,12 +54,12 @@ export default function FaqPage() {
 
   const handleCreate = async (data: { question: string; answer: string }) => {
     try {
-      const response = await createFaq({ category: 'payment', ...data }).unwrap() as any;
+      const response = await createFaq({ category: 'payment', ...data }).unwrap() as { message: string };
       refetch();
       setIsCreateOpen(false);
       toast.success(response.message || 'FAQ created successfully!');
-    } catch (error: any) {
-      toast.error(error.data?.message || 'Failed to create FAQ');
+    } catch (error: unknown) {
+      toast.error((error as { data?: { message?: string } }).data?.message || 'Failed to create FAQ');
     }
   };
 
@@ -69,26 +69,26 @@ export default function FaqPage() {
       const response = await updateFaq({
         id: selectedFaq._id,
         data: { category: 'payment', ...data },
-      }).unwrap() as any;
+      }).unwrap() as { message: string };
       refetch();
       setIsEditOpen(false);
       setSelectedFaq(null);
       toast.success(response.message || 'FAQ updated successfully!');
-    } catch (error: any) {
-      toast.error(error.data?.message || 'Failed to update FAQ');
+    } catch (error: unknown) {
+      toast.error((error as { data?: { message?: string } }).data?.message || 'Failed to update FAQ');
     }
   };
 
   const handleDelete = async () => {
     if (!selectedFaq) return;
     try {
-      const response = await deleteFaq(selectedFaq._id).unwrap() as any;
+      const response = await deleteFaq(selectedFaq._id).unwrap() as { message: string };
       refetch();
       setIsDeleteOpen(false);
       setSelectedFaq(null);
       toast.success(response.message || 'FAQ deleted successfully!');
-    } catch (error: any) {
-      toast.error(error.data?.message || 'Failed to delete FAQ');
+    } catch (error: unknown) {
+      toast.error((error as { data?: { message?: string } }).data?.message || 'Failed to delete FAQ');
     }
   };
 

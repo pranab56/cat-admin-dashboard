@@ -17,7 +17,21 @@ import {
   useUpdatePackageMutation
 } from '../../../features/subscribe/subscribeApi';
 
-// Define API response types
+interface RawPackage {
+  _id: string;
+  title: string;
+  type: string;
+  planType: string;
+  price: number;
+  productId: string;
+  platform: string;
+  benefits: string[];
+  participantCount: number;
+  isDeleted: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 interface ApiResponse {
   message: string;
   data: Plan[] | Plan;
@@ -49,7 +63,7 @@ export default function SubscriptionPlans() {
   const [deletePackage, { isLoading: isDeletePackageLoading }] = useDeletePackageMutation();
 
   // Group flat API packages by title into the Plan shape (with planPrices[])
-  const groupPackagesByTitle = (packages: any[]): Plan[] => {
+  const groupPackagesByTitle = (packages: RawPackage[]): Plan[] => {
     const grouped: Record<string, Plan> = {};
     packages.forEach((pkg) => {
       if (!grouped[pkg.title]) {
@@ -74,7 +88,7 @@ export default function SubscriptionPlans() {
     return Object.values(grouped);
   };
 
-  const rawPackages: any[] = packagesResponse?.data as any[] || [];
+  const rawPackages: RawPackage[] = (packagesResponse?.data as RawPackage[]) || [];
   const plans: Plan[] = groupPackagesByTitle(rawPackages);
 
   const handleAddPlan = async (newPlanData: PackageBody): Promise<void> => {
