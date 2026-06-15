@@ -67,7 +67,7 @@ export default function LoginPage() {
       return;
     }
 
-    const candidate = { email: email, password: password };
+    const candidate = { email: email, password: password, userDeviceId: "jsdkjhsdjkfhkjs" };
     try {
       const response = await login(candidate).unwrap() as LoginResponse;
       console.log('Login successful:', response);

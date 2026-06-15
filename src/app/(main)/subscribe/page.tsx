@@ -1,10 +1,11 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import CustomLoading from '../../../components/Loading/CustomLoading';
-import AddModal from '../../../components/subscribe/AddModal';
+import AddModal, { PackageBody } from '../../../components/subscribe/AddModal';
 import DeleteModal from '../../../components/subscribe/DeleteModal';
 import EditModal from '../../../components/subscribe/EditModal';
 import PlanCard from '../../../components/subscribe/PlanCard';
@@ -39,17 +40,44 @@ export default function SubscriptionPlans() {
   const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState<boolean>(false);
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
+  const [platform, setPlatform] = useState<'apple' | 'google'>('apple');
 
   // API hooks
-  const { data: packagesResponse, isLoading: isPackagesLoading, refetch } = useGetAllPackageQuery({});
+  const { data: packagesResponse, isLoading: isPackagesLoading, refetch } = useGetAllPackageQuery({ platform });
   const [createPackage, { isLoading: isCreatePackageLoading }] = useCreatePackageMutation();
   const [updatePackage, { isLoading: isUpdatePackageLoading }] = useUpdatePackageMutation();
   const [deletePackage, { isLoading: isDeletePackageLoading }] = useDeletePackageMutation();
 
-  // Extract plans from API response with proper typing
-  const plans: Plan[] = packagesResponse?.data as Plan[] || [];
+  // Group flat API packages by title into the Plan shape (with planPrices[])
+  const groupPackagesByTitle = (packages: any[]): Plan[] => {
+    const grouped: Record<string, Plan> = {};
+    packages.forEach((pkg) => {
+      if (!grouped[pkg.title]) {
+        grouped[pkg.title] = {
+          _id: pkg._id,
+          title: pkg.title,
+          planPrices: [],
+          benefits: pkg.benefits,
+          participantCount: pkg.participantCount,
+          isDeleted: pkg.isDeleted,
+          createdAt: pkg.createdAt,
+          updatedAt: pkg.updatedAt,
+        };
+      }
+      grouped[pkg.title].planPrices.push({
+        type: pkg.type,
+        price: pkg.price,
+        productId: pkg.productId,
+        _id: pkg._id,
+      });
+    });
+    return Object.values(grouped);
+  };
 
-  const handleAddPlan = async (newPlanData: Omit<Plan, '_id' | 'createdAt' | 'updatedAt'>): Promise<void> => {
+  const rawPackages: any[] = packagesResponse?.data as any[] || [];
+  const plans: Plan[] = groupPackagesByTitle(rawPackages);
+
+  const handleAddPlan = async (newPlanData: PackageBody): Promise<void> => {
     try {
       const response = await createPackage(newPlanData).unwrap() as ApiResponse;
       refetch(); // Refresh the list
@@ -109,7 +137,20 @@ export default function SubscriptionPlans() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
       <div className="">
-        <div className="flex justify-end mb-8">
+        <div className="flex justify-between items-center mb-8">
+          <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-xl shadow-sm">
+            <span className={`text-sm font-medium ${platform === 'apple' ? 'text-blue-600' : 'text-gray-400'}`}>
+              Apple
+            </span>
+            <Switch
+              checked={platform === 'google'}
+              onCheckedChange={(checked) => setPlatform(checked ? 'google' : 'apple')}
+            />
+            <span className={`text-sm font-medium ${platform === 'google' ? 'text-blue-600' : 'text-gray-400'}`}>
+              Google
+            </span>
+          </div>
+
           <Button
             onClick={() => setIsAddModalOpen(true)}
             className="bg-blue-500 hover:bg-blue-600 text-white"
@@ -119,7 +160,7 @@ export default function SubscriptionPlans() {
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-4 gap-6 items-stretch">
           {plans.map((plan: Plan) => (
             <PlanCard
               key={plan._id}

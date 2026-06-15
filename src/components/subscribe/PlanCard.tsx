@@ -33,7 +33,7 @@ export default function PlanCard({ plan, onEdit, onDelete }: PlanCardProps) {
   const hasMultiplePrices = plan.planPrices.some(p => p.type === 'month' || p.type === 'year');
 
   return (
-    <div className="bg-white rounded-2xl p-6 shadow-sm">
+    <div className="bg-white rounded-2xl p-6 shadow-sm flex flex-col h-full">
       <div className="flex justify-center mb-4">
         <Users size={32} className="text-gray-800" />
       </div>
@@ -80,7 +80,7 @@ export default function PlanCard({ plan, onEdit, onDelete }: PlanCardProps) {
         </span>
       </div>
 
-      <div className="space-y-3 mb-6">
+      <div className="space-y-3 mb-6 flex-1">
         {plan.benefits.map((benefit: string, index: number) => (
           <div key={index} className="flex items-start gap-2">
             <svg

@@ -10,7 +10,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
-        hostname: "humayon5004.binarybards.online",
+        hostname: "api.catherdingapp.com",
       },
       {
         protocol: "http",

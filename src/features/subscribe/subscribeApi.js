@@ -5,8 +5,8 @@ export const subscribeApi = baseApi.injectEndpoints({
   endpoints: (builder) => ({
 
     getAllPackage: builder.query({
-      query: () => ({
-        url: "/package/packages",
+      query: ({ platform }) => ({
+        url: `/package/user?platform=${platform}`,
         method: "GET",
       }),
     }),

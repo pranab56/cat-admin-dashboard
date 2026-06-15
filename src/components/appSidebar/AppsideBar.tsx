@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/sidebar";
 import {
   Bell,
+  HelpCircle,
   LayoutGrid,
   User,
   Users
@@ -31,6 +32,7 @@ const sidebars: SidebarItem[] = [
   { name: "User Management", path: "/user-management", icon: Users },
   { name: "Subscribe Plan", path: "/subscribe", icon: Users },
   // { name: "App Setting", path: "/app-setting", icon: Settings },
+  { name: "FAQ", path: "/faq", icon: HelpCircle },
   { name: "Notification", path: "/notifications", icon: Bell },
   { name: "Profile", path: "/settings", icon: User },
 ];
