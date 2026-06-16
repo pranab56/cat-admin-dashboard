@@ -72,6 +72,7 @@ export default function LoginPage() {
       const response = await login(candidate).unwrap() as LoginResponse;
       console.log('Login successful:', response);
       saveToken(response.data.accessToken);
+      document.cookie = `cat-admin-token=${response.data.accessToken}; path=/; SameSite=Lax`;
       toast.success(response.message || 'Login successful!');
       router.push('/');
     } catch (error) {

@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useGetAllNotificationQuery } from '../../features/notifications/notificationsApi';
 import { useGetProfileQuery } from '../../features/settings/settingsApi';
 import { baseURL } from '../../utils/BaseURL';
+import { removeToken } from '../../utils/storage';
 
 export default function Header() {
   const pathname = usePathname();
@@ -46,9 +47,9 @@ export default function Header() {
     setIsDropdownOpen(false);
   };
 
-  const handleLogout = () => {
-    // Add your logout logic here
-    console.log("Logging out...");
+  const handleLogout = async () => {
+    removeToken();
+    await fetch('/api/auth/logout', { method: 'POST' });
     setIsDropdownOpen(false);
     router.push("/auth/login");
   };
