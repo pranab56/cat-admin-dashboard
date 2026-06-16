@@ -105,7 +105,7 @@ export default function EventsLineChart(): React.ReactElement {
                 padding: "8px 12px",
               }}
               labelStyle={{ color: "#374151", fontWeight: 600 }}
-              formatter={(value: number | string) => [`${value}`, 'Income']}
+              formatter={(value) => [`${value ?? ''}`, 'Income']}
             />
             <Area
               type="monotone"
