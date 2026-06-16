@@ -175,7 +175,7 @@ export default function SubscriptionPlans() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-4 gap-6 items-stretch">
-          {plans.map((plan: Plan) => (
+          {plans?.reverse()?.map((plan: Plan) => (
             <PlanCard
               key={plan._id}
               plan={plan}
