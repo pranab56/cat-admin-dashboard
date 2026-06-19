@@ -25,8 +25,8 @@ export const overviewApi = baseApi.injectEndpoints({
     }),
 
     allUsers: builder.query({
-      query: () => ({
-        url: `/users/all-users`,
+      query: ({ page }) => ({
+        url: `/users/all-users?page=${page}`,
         method: "GET",
       }),
     }),
