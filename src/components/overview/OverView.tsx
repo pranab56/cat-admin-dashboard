@@ -28,7 +28,7 @@ export default function Overview(): React.ReactElement {
   // Extract free and premium users from result array
   const resultData: UserTypeCount[] = stateData?.data?.result || [];
   const freeUsers: number = resultData.find((item: UserTypeCount) => item.planType === 'free')?.count || 0;
-  const premiumUsers: number = resultData.find((item: UserTypeCount) => item.planType === 'premium')?.count || 0;
+  const premiumUsers: number = resultData.find((item: UserTypeCount) => item.planType === 'paid')?.count || 0;
 
   if (isLoading) {
     return <CustomLoading />;
