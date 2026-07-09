@@ -1,5 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { LucideIcon, TrendingDown, TrendingUp } from "lucide-react";
+import { LucideIcon } from "lucide-react";
 
 interface StatsCardProps {
   icon: LucideIcon;
@@ -7,8 +7,7 @@ interface StatsCardProps {
   iconBgColor: string;
   value: string;
   label: string;
-  trend: number;
-  isPositive: boolean;
+
 }
 
 export default function StatsCard({
@@ -17,8 +16,6 @@ export default function StatsCard({
   iconBgColor,
   value,
   label,
-  trend,
-  isPositive,
 }: StatsCardProps) {
   return (
     <Card className="border-0 shadow-sm p-0">
@@ -34,15 +31,6 @@ export default function StatsCard({
             <h3 className="text-2xl font-bold text-gray-900">{value}</h3>
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-600">{label}</span>
-              <div className={`flex items-center gap-1 text-xs font-medium ${isPositive ? "text-green-600" : "text-red-600"
-                }`}>
-                {isPositive ? (
-                  <TrendingUp className="w-3 h-3" />
-                ) : (
-                  <TrendingDown className="w-3 h-3" />
-                )}
-                <span>{isPositive ? "+" : ""}{trend}%</span>
-              </div>
             </div>
           </div>
         </div>

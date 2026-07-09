@@ -38,7 +38,7 @@ export default function EventsLineChart(): React.ReactElement {
   const { data: EarningChartData } = useAllEarningResioChartQuery(selectedYear);
 
   // Generate year options (current year and previous 2 years)
-  const yearOptions: number[] = [currentYear, currentYear - 1, currentYear - 2];
+  const yearOptions = Array.from({ length: 5 }, (_, i) => currentYear + i);
 
   // Transform API data for the chart
   const chartData: ChartDataItem[] = EarningChartData?.data?.map((item: EarningChartItem) => ({
@@ -54,7 +54,7 @@ export default function EventsLineChart(): React.ReactElement {
     <Card className="border-0 shadow-sm">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-lg font-semibold text-gray-900">
-          Events Created Over Time
+          Event Creation Ratio
         </CardTitle>
 
         {/* Year Dropdown using shadcn Select */}

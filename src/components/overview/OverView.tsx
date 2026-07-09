@@ -45,8 +45,6 @@ export default function Overview(): React.ReactElement {
             iconBgColor="bg-blue-50"
             value={totalUsers.toString()}
             label="Total Users"
-            trend={35}
-            isPositive={true}
           />
           <StatsCard
             icon={Calendar}
@@ -54,8 +52,6 @@ export default function Overview(): React.ReactElement {
             iconBgColor="bg-green-50"
             value={totalEvents.toString()}
             label="Total Events"
-            trend={27}
-            isPositive={true}
           />
           <StatsCard
             icon={UserCheck}
@@ -63,8 +59,6 @@ export default function Overview(): React.ReactElement {
             iconBgColor="bg-yellow-50"
             value={freeUsers.toString()}
             label="Free Users"
-            trend={35}
-            isPositive={true}
           />
           <StatsCard
             icon={Crown}
@@ -72,8 +66,6 @@ export default function Overview(): React.ReactElement {
             iconBgColor="bg-red-50"
             value={premiumUsers.toString()}
             label="Premium Users"
-            trend={0.5}
-            isPositive={false}
           />
         </div>
 
