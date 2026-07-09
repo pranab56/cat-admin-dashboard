@@ -10,7 +10,7 @@ import UserListTable from './UserListTable';
 
 // Interface for the API response
 interface UserTypeCount {
-  type: string;
+  planType: string;
   count: number;
 }
 
@@ -27,8 +27,8 @@ export default function Overview(): React.ReactElement {
 
   // Extract free and premium users from result array
   const resultData: UserTypeCount[] = stateData?.data?.result || [];
-  const freeUsers: number = resultData.find((item: UserTypeCount) => item.type === 'free')?.count || 0;
-  const premiumUsers: number = resultData.find((item: UserTypeCount) => item.type === 'premium')?.count || 0;
+  const freeUsers: number = resultData.find((item: UserTypeCount) => item.planType === 'free')?.count || 0;
+  const premiumUsers: number = resultData.find((item: UserTypeCount) => item.planType === 'premium')?.count || 0;
 
   if (isLoading) {
     return <CustomLoading />;

@@ -47,12 +47,12 @@ export default function UserDonutChart({ freeUsers, premiumUsers, totalUsers }: 
             </ResponsiveContainer>
 
             {/* Center Text */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
+            {/* <div className="absolute inset-0 flex flex-col items-center justify-center">
               <div className="text-3xl font-bold text-gray-900">
-                {totalUsers}
+                {freeUsers + premiumUsers}
               </div>
-              <div className="text-sm text-gray-600">Total Users</div>
-            </div>
+              {/* <div className="text-sm text-gray-600">Total Users</div> */}
+            {/* </div>  */}
           </div>
 
           {/* Legend */}
