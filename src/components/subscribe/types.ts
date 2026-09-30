@@ -1,9 +1,10 @@
 export interface PlanPrice {
+  _id?: string;
   type: string;
   price: number;
   priceId?: string;
   productId?: string;
-  _id?: string;
+  platform?: string;
 }
 
 export interface Plan {

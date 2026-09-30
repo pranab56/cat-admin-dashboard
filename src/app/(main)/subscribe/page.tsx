@@ -1,7 +1,6 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import CustomLoading from '../../../components/Loading/CustomLoading';
@@ -54,10 +53,9 @@ export default function SubscriptionPlans() {
   const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState<boolean>(false);
   const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
-  const [platform, setPlatform] = useState<'apple' | 'google'>('apple');
 
-  // API hooks
-  const { data: packagesResponse, isLoading: isPackagesLoading, refetch } = useGetAllPackageQuery({ platform });
+  // API hooks - fetch all packages without filtering by platform
+  const { data: packagesResponse, isLoading: isPackagesLoading, refetch } = useGetAllPackageQuery({});
   const [createPackage, { isLoading: isCreatePackageLoading }] = useCreatePackageMutation();
   const [updatePackage, { isLoading: isUpdatePackageLoading }] = useUpdatePackageMutation();
   const [deletePackage, { isLoading: isDeletePackageLoading }] = useDeletePackageMutation();
@@ -82,6 +80,7 @@ export default function SubscriptionPlans() {
         type: pkg.type,
         price: pkg.price,
         productId: pkg.productId,
+        platform: pkg.platform,
         _id: pkg._id,
       });
     });
@@ -104,15 +103,41 @@ export default function SubscriptionPlans() {
     }
   };
 
-  const handleEditPlan = async (updatedPlanData: Plan): Promise<void> => {
+  const handleEditPlan = async (updatedPlanData: Plan, removedPriceIds: string[] = []): Promise<void> => {
     try {
-      const { _id, ...data } = updatedPlanData;
-      const response = await updatePackage({ id: _id, data }).unwrap() as ApiResponse;
+      const { title, participantCount, benefits, planPrices } = updatedPlanData;
+
+      // 1. Delete removed pricing package documents
+      if (removedPriceIds.length > 0) {
+        await Promise.all(removedPriceIds.map((id) => deletePackage(id).unwrap()));
+      }
+
+      // 2. Update existing or Create new pricing package documents
+      const promises = planPrices.map((priceItem) => {
+        const payload = {
+          title,
+          type: priceItem.type,
+          planType: priceItem.type === 'free' ? 'free' : 'paid',
+          price: priceItem.price,
+          productId: priceItem.productId || '',
+          platform: priceItem.platform || 'apple',
+          participantCount,
+          benefits,
+        };
+
+        if (priceItem._id) {
+          return updatePackage({ id: priceItem._id, data: payload }).unwrap();
+        } else {
+          return createPackage(payload).unwrap();
+        }
+      });
+
+      await Promise.all(promises);
+
       refetch(); // Refresh the list
       setIsEditModalOpen(false);
       setSelectedPlan(null);
-      console.log("edit Response", response);
-      toast.success(response.message || 'Package updated successfully!');
+      toast.success('Package updated successfully!');
     } catch (error) {
       const apiError = error as ApiError;
       console.error('Failed to update package:', apiError);
@@ -122,11 +147,19 @@ export default function SubscriptionPlans() {
 
   const handleDeletePlan = async (planId: string): Promise<void> => {
     try {
-      const response = await deletePackage(planId).unwrap() as ApiResponse;
+      if (selectedPlan && selectedPlan.planPrices.length > 0) {
+        await Promise.all(
+          selectedPlan.planPrices
+            .filter((p) => p._id)
+            .map((p) => deletePackage(p._id!).unwrap())
+        );
+      } else {
+        await deletePackage(planId).unwrap();
+      }
       refetch(); // Refresh the list
       setIsDeleteModalOpen(false);
       setSelectedPlan(null);
-      toast.success(response.message || 'Plan deleted successfully!');
+      toast.success('Plan deleted successfully!');
     } catch (error) {
       const apiError = error as ApiError;
       console.error('Failed to delete package:', apiError);
@@ -149,32 +182,20 @@ export default function SubscriptionPlans() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
-      <div className="">
+    <div className="bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
+      <div>
         <div className="flex justify-between items-center mb-8">
-          <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-xl shadow-sm">
-            <span className={`text-sm font-medium ${platform === 'apple' ? 'text-blue-600' : 'text-gray-400'}`}>
-              Apple
-            </span>
-            <Switch
-              checked={platform === 'google'}
-              onCheckedChange={(checked) => setPlatform(checked ? 'google' : 'apple')}
-            />
-            <span className={`text-sm font-medium ${platform === 'google' ? 'text-blue-600' : 'text-gray-400'}`}>
-              Google
-            </span>
-          </div>
-
+          <h1 className="text-2xl font-bold text-gray-800">Subscription Plans</h1>
           <Button
             onClick={() => setIsAddModalOpen(true)}
-            className="bg-blue-500 hover:bg-blue-600 text-white"
+            className="bg-blue-500 hover:bg-blue-600 text-white cursor-pointer"
             disabled={isCreatePackageLoading}
           >
             {isCreatePackageLoading ? 'Adding...' : 'Add Subscription Plan'}
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-4 gap-6 items-stretch">
+        <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-3 gap-6 items-stretch">
           {plans?.reverse()?.map((plan: Plan) => (
             <PlanCard
               key={plan._id}
