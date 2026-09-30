@@ -128,7 +128,7 @@ export default function EditModal({ isOpen, onClose, plan, onSave, isLoading = f
     }));
   };
 
-  const handleUpdatePriceItem = (index: number, field: keyof PlanPrice, value: any) => {
+  const handleUpdatePriceItem = (index: number, field: keyof PlanPrice, value: PlanPrice[keyof PlanPrice]) => {
     setFormData((prev) => {
       const updated = [...prev.planPrices];
       updated[index] = {
@@ -286,7 +286,7 @@ export default function EditModal({ isOpen, onClose, plan, onSave, isLoading = f
                   <Label className="text-xs text-gray-500 mb-1 block">Type</Label>
                   <Select
                     value={newType}
-                    onValueChange={(val) => setNewType(val as any)}
+                    onValueChange={(val: 'month' | 'year' | 'free') => setNewType(val)}
                   >
                     <SelectTrigger className="w-full bg-white border-gray-200 text-sm h-9">
                       <SelectValue />
@@ -303,7 +303,7 @@ export default function EditModal({ isOpen, onClose, plan, onSave, isLoading = f
                   <Label className="text-xs text-gray-500 mb-1 block">Platform</Label>
                   <Select
                     value={newPlatform}
-                    onValueChange={(val) => setNewPlatform(val as any)}
+                    onValueChange={(val: 'apple' | 'google') => setNewPlatform(val)}
                   >
                     <SelectTrigger className="w-full bg-white border-gray-200 text-sm h-9 capitalize">
                       <SelectValue />

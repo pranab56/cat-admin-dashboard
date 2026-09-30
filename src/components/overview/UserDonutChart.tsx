@@ -9,7 +9,7 @@ interface UserDonutChartProps {
   totalUsers: number;
 }
 
-export default function UserDonutChart({ freeUsers, premiumUsers, totalUsers }: UserDonutChartProps) {
+export default function UserDonutChart({ freeUsers, premiumUsers }: UserDonutChartProps) {
   // Prepare data for the chart from API response
   const data = [
     { name: "Free", value: freeUsers, color: "#22c55e" },
